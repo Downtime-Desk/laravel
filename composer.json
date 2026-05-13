@@ -1,0 +1,41 @@
+{
+  "schema": "https://getcomposer.org/schema.json",
+  "name": "downtime-desk/laravel",
+  "description": "Report to Downtime Desk monitors directly from your Laravel app.",
+  "autoload": {
+    "psr-4": {
+      "DowntimeDesk\\Laravel\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "DowntimeDesk\\Laravel\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": ">=8.2",
+    "illuminate/support": "^11.0|^v12.0|^13.0",
+    "illuminate/http": "^11.0|^v12.0|^13.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11",
+    "laravel/pint": "^1.29",
+    "phpstan/phpstan": "^2.1",
+    "orchestra/testbench": "^11.0",
+    "larastan/larastan": "^3.0"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "DowntimeDesk\\Laravel\\DowntimeDeskLaravelIntegrationServiceProvider"
+      ],
+      "aliases": {
+        "DowntimeDesk": "DowntimeDesk"
+      }
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "pint": "vendor/bin/pint"
+  }
+}
