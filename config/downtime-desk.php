@@ -15,20 +15,51 @@ return [
 
     'enabled' => env('DOWNTIME_DESK_ENABLED', true),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default Monitor Name
+    |--------------------------------------------------------------------------
+    |
+    | The default monitor name to use when no specific monitor is provided.
+    |
+    */
+
     'default' => 'default',
 
-    'base_url' => env(
-        'DOWNTIME_DESK_BASE_URL',
-        'https://app.downtimedesk.com'
-    ),
+    /*
+    |--------------------------------------------------------------------------
+    | Downtime Desk base URL
+    |--------------------------------------------------------------------------
+    |
+    | Base URL used when reporting back to Downtime Desk.
+    |
+    */
 
-    'queue' => env('DOWNTIME_DESK_QUEUE', 'monitoring'),
+    'base_url' => 'https://app.downtimedesk.com/api/heartbeat/{uuid}',
 
-    'timeout' => env('DOWNTIME_DESK_TIMEOUT', 5),
+    /*
+    |--------------------------------------------------------------------------
+    | Queue
+    |--------------------------------------------------------------------------
+    |
+    | When working with queues, this setting determines the name of the queue
+    | used for monitoring tasks. Adjust as needed for your application's queue configuration.
+    |
+    */
 
-    'auto_schedule' => env('DOWNTIME_DESK_AUTO_SCHEDULE', true),
+    'queue' => env('DOWNTIME_DESK_QUEUE', 'default'),
 
-    'webhooks' => [
+    /*
+    |--------------------------------------------------------------------------
+    | Monitors
+    |--------------------------------------------------------------------------
+    |
+    | Configured named monitors. Add additional monitors to report() them
+    | by name within your application.
+    |
+    */
+
+    'monitors' => [
 
         'default' => [
             'id' => env('DOWNTIME_DESK_WEBHOOK_ID'),
