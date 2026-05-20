@@ -1,7 +1,10 @@
 .idea
+.junie
+.ai
 .vscode
 build
 vendor
+.output.txt
 .phpunit.cache
 !.gitkeep
 composer.lock
