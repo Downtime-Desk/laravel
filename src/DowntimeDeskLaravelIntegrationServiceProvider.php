@@ -2,10 +2,12 @@
 
 namespace DowntimeDesk\Laravel;
 
+use DowntimeDesk\Laravel\Console\Commands\DowntimeDeskPingCommand;
+use DowntimeDesk\Laravel\Contracts\Dispatcher as DispatcherContract;
+use DowntimeDesk\Laravel\Dispatchers\Dispatcher;
+use DowntimeDesk\Laravel\Jobs\FlushMonitorPings;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
-use DowntimeDesk\Laravel\Console\Commands\DowntimeDeskPingCommand;
-use DowntimeDesk\Laravel\Jobs\DispatchHeartbeat;
 
 class DowntimeDeskLaravelIntegrationServiceProvider extends ServiceProvider
 {
@@ -25,6 +27,7 @@ class DowntimeDeskLaravelIntegrationServiceProvider extends ServiceProvider
         }
 
         $this->app->booted(function () {
+            $this->registerAggregator();
             $this->registerScheduler();
             $this->registerMacros();
         });
@@ -40,24 +43,37 @@ class DowntimeDeskLaravelIntegrationServiceProvider extends ServiceProvider
             'downtime-desk'
         );
 
-        $this->app->singleton(
-            DowntimeDeskManager::class,
-            fn () => new DowntimeDeskManager
-        );
-
         $this->app->alias(
             DowntimeDeskManager::class,
             'downtime-desk'
         );
+
+        $this->app->singleton(DowntimeDeskManager::class);
+
+        $this->app->bind(
+            DispatcherContract::class,
+            fn () => app(Dispatcher::class)
+        );
     }
 
-    protected function registerScheduler(): void
+    protected function registerAggregator(): void
     {
         if (! config('downtime-desk.enabled')) {
             return;
         }
 
-        if (! config('downtime-desk.auto_schedule')) {
+        if (DowntimeDeskManager::aggregationDisabled()) {
+            return;
+        }
+
+        $schedule = $this->app->make(Schedule::class);
+
+        $schedule->job(FlushMonitorPings::class)->everyFiveSeconds();
+    }
+
+    protected function registerScheduler(): void
+    {
+        if (! config('downtime-desk.enabled')) {
             return;
         }
 
@@ -67,22 +83,15 @@ class DowntimeDeskLaravelIntegrationServiceProvider extends ServiceProvider
 
         $schedule = $this->app->make(Schedule::class);
 
-        foreach (
-            config('downtime-desk.webhooks', []) as $name => $webhook
-        ) {
-            $schedule->job(
-                new DispatchHeartbeat($name)
-            )->everyMinute();
+        foreach (array_keys(config('downtime-desk.monitors', [])) as $name) {
+            DowntimeDeskManager::scheduleRegistrationCallback()($schedule, $name);
         }
     }
 
     protected function registerMacros(): void
     {
-        Schedule::macro('DowntimeDesk', function (string $name) {
-            return $this->app->call(function () use ($name) {
-                app(DowntimeDeskManager::class)
-                    ->report($name);
-            });
-        });
+        Schedule::macro('downtimeDesk',
+            fn (string $name) => $this->app->call(fn () => app(DowntimeDeskManager::class)->report($name))
+        );
     }
 }
