@@ -2,8 +2,8 @@
 
 namespace DowntimeDesk\Laravel\Console\Commands;
 
-use Illuminate\Console\Command;
 use DowntimeDesk\Laravel\DowntimeDeskManager;
+use Illuminate\Console\Command;
 
 class DowntimeDeskPingCommand extends Command
 {

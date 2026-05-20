@@ -2,21 +2,26 @@
 
 namespace DowntimeDesk\Laravel\Tests\Unit;
 
+use DowntimeDesk\Laravel\DowntimeDeskManager;
+use DowntimeDesk\Laravel\Facades\DowntimeDesk;
+use DowntimeDesk\Laravel\Tests\TestCase;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use DowntimeDesk\Laravel\DowntimeDeskManager;
-use DowntimeDesk\Laravel\Tests\TestCase;
 
 class DowntimeDeskManagerTest extends TestCase
 {
-    public function test_it_dispatches_default_webhook(): void
+    public function test_it_dispatches_report_to_dispatcher(): void
     {
         Http::fake();
+        config(['downtime-desk.monitors.default' => ['id' => '123', 'secret' => 'abc']]);
 
+        DowntimeDesk::withoutAggregation();
         app(DowntimeDeskManager::class)->report();
 
         Http::assertSent(function ($request) {
-            return $request->hasHeader('X-Monitor-Key', 'abcd');
+            return $request->hasHeader('X-Monitor-Secret', 'abc') &&
+                   str_contains($request->url(), '123');
         });
     }
 
@@ -25,42 +30,42 @@ class DowntimeDeskManagerTest extends TestCase
         Http::fake();
 
         app(DowntimeDeskManager::class)
-            ->ping('id', 'secret');
+            ->ping('123', 'abc');
 
-        Http::assertSentCount(1);
+        Http::assertSent(function ($request) {
+            return $request->hasHeader('X-Monitor-Secret', 'abc') &&
+                   str_contains($request->url(), '123');
+        });
     }
 
-    public function test_should_dispatch_returns_true_initially(): void
+    public function test_it_aggregates_pings_in_cache(): void
     {
         Cache::flush();
+        config(['downtime-desk.monitors.default' => ['id' => '123', 'secret' => 'abc']]);
 
-        $result = app(DowntimeDeskManager::class)
-            ->shouldDispatch('default');
+        app(DowntimeDeskManager::class)->report();
 
-        $this->assertTrue($result);
+        $this->assertCount(1, Cache::get('monitor:pings'));
     }
 
-    public function test_should_dispatch_returns_false_within_interval(): void
+    public function test_it_throws_exception_if_monitor_not_configured(): void
     {
-        Cache::flush();
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Monitor [non-existent] is not configured.');
 
-        $manager = app(DowntimeDeskManager::class);
-
-        $manager->shouldDispatch('default');
-
-        $this->assertFalse(
-            $manager->shouldDispatch('default')
-        );
+        app(DowntimeDeskManager::class)->report('non-existent');
     }
 
-    public function test_it_can_disable_auto_scheduling(): void
+    public function test_it_can_customize_schedule_registration(): void
     {
-        $manager = app(DowntimeDeskManager::class);
+        $called = false;
+        DowntimeDesk::registerScheduleWith(function ($schedule, $name) use (&$called) {
+            $called = true;
+        });
 
-        $manager->disableAutoScheduling();
+        $callback = DowntimeDeskManager::scheduleRegistrationCallback();
+        $callback(app(Schedule::class), 'default');
 
-        $this->assertTrue(
-            DowntimeDeskManager::schedulingDisabled()
-        );
+        $this->assertTrue($called);
     }
 }

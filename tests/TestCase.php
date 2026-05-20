@@ -2,12 +2,20 @@
 
 namespace DowntimeDesk\Laravel\Tests;
 
-use Orchestra\Testbench\TestCase as Orchestra;
-use DowntimeDesk\Laravel\Facades\DowntimeDesk;
 use DowntimeDesk\Laravel\DowntimeDeskLaravelIntegrationServiceProvider;
+use DowntimeDesk\Laravel\DowntimeDeskManager;
+use DowntimeDesk\Laravel\Facades\DowntimeDesk;
+use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
 {
+    protected function tearDown(): void
+    {
+        DowntimeDeskManager::reset();
+
+        parent::tearDown();
+    }
+
     protected function getPackageProviders($app)
     {
         return [
@@ -17,9 +25,7 @@ class TestCase extends Orchestra
 
     protected function getPackageAliases($app)
     {
-        return [
-            'DowntimeDesk' => DowntimeDesk::class,
-        ];
+        return ['DowntimeDesk' => DowntimeDesk::class];
     }
 
     protected function defineEnvironment($app)

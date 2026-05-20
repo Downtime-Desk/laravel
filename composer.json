@@ -36,6 +36,6 @@
   },
   "scripts": {
     "test": "vendor/bin/phpunit",
-    "pint": "vendor/bin/pint"
+    "lint": "vendor/bin/pint"
   }
 }

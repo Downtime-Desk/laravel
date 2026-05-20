@@ -2,12 +2,12 @@
 
 namespace DowntimeDesk\Laravel\Jobs;
 
+use DowntimeDesk\Laravel\DowntimeDeskManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use DowntimeDesk\Laravel\DowntimeDeskManager;
 
 class DispatchHeartbeat implements ShouldQueue
 {
@@ -19,18 +19,11 @@ class DispatchHeartbeat implements ShouldQueue
     public function __construct(
         protected string $name
     ) {
-        $this->onQueue(
-            config('downtime-desk.queue', 'monitoring')
-        );
+        $this->onQueue(config('downtime-desk.queue'));
     }
 
-    public function handle(
-        DowntimeDeskManager $manager
-    ): void {
-        if (! $manager->shouldDispatch($this->name)) {
-            return;
-        }
-
+    public function handle(DowntimeDeskManager $manager): void
+    {
         $manager->report($this->name);
     }
 }
